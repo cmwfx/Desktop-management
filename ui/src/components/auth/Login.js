@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
 const Login = () => {
 	const [formData, setFormData] = useState({
@@ -8,8 +9,16 @@ const Login = () => {
 	});
 	const [error, setError] = useState("");
 	const navigate = useNavigate();
+	const { login, isAuthenticated, userRole } = useContext(AuthContext);
 
 	const { email, password } = formData;
+
+	// Redirect if already authenticated
+	useEffect(() => {
+		if (isAuthenticated) {
+			navigate(userRole === "admin" ? "/admin" : "/user");
+		}
+	}, [isAuthenticated, userRole, navigate]);
 
 	const onChange = (e) => {
 		setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,20 +26,16 @@ const Login = () => {
 
 	const onSubmit = async (e) => {
 		e.preventDefault();
+		setError("");
 
-		// This is a placeholder - we'll implement actual login logic later
 		try {
-			// Simulate successful login
-			localStorage.setItem("token", "dummy-token");
+			// Use Firebase authentication
+			await login(email, password);
 
-			// For demo purposes, let's set a role based on email
-			const role = email.includes("admin") ? "admin" : "user";
-			localStorage.setItem("userRole", role);
-
-			// Redirect to appropriate dashboard
-			navigate(role === "admin" ? "/admin" : "/user");
+			// Redirection will happen in the useEffect hook
 		} catch (err) {
-			setError("Invalid credentials");
+			setError(err.message || "Invalid credentials");
+			console.error("Login error:", err);
 		}
 	};
 
@@ -65,6 +70,12 @@ const Login = () => {
 			<p>
 				Don't have an account? <Link to="/register">Register</Link>
 			</p>
+			<div className="login-help">
+				<p>
+					<strong>Hint:</strong> For admin access, use an email containing
+					"admin"
+				</p>
+			</div>
 		</div>
 	);
 };

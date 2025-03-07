@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
 const AdminDashboard = () => {
 	const [computers, setComputers] = useState([
@@ -16,11 +17,15 @@ const AdminDashboard = () => {
 	]);
 
 	const navigate = useNavigate();
+	const { logout, user } = useContext(AuthContext);
 
-	const handleLogout = () => {
-		localStorage.removeItem("token");
-		localStorage.removeItem("userRole");
-		navigate("/login");
+	const handleLogout = async () => {
+		try {
+			await logout();
+			navigate("/login");
+		} catch (error) {
+			console.error("Logout error:", error);
+		}
 	};
 
 	const handleAddBalance = (userId, amount) => {
@@ -36,7 +41,10 @@ const AdminDashboard = () => {
 		<div className="admin-dashboard">
 			<header>
 				<h1>Internet Cafe Admin Dashboard</h1>
-				<button onClick={handleLogout}>Logout</button>
+				<div className="user-info">
+					<p>Welcome, Admin {user?.email}</p>
+					<button onClick={handleLogout}>Logout</button>
+				</div>
 			</header>
 
 			<div className="dashboard-stats">

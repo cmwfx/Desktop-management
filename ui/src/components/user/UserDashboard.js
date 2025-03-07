@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
 const UserDashboard = () => {
 	const [balance, setBalance] = useState(0);
@@ -11,11 +12,15 @@ const UserDashboard = () => {
 	]);
 	const [activeSession, setActiveSession] = useState(null);
 	const navigate = useNavigate();
+	const { logout, user } = useContext(AuthContext);
 
-	const handleLogout = () => {
-		localStorage.removeItem("token");
-		localStorage.removeItem("userRole");
-		navigate("/login");
+	const handleLogout = async () => {
+		try {
+			await logout();
+			navigate("/login");
+		} catch (error) {
+			console.error("Logout error:", error);
+		}
 	};
 
 	const handleDeposit = () => {
@@ -51,7 +56,10 @@ const UserDashboard = () => {
 		<div className="user-dashboard">
 			<header>
 				<h1>Internet Cafe User Dashboard</h1>
-				<button onClick={handleLogout}>Logout</button>
+				<div className="user-info">
+					<p>Welcome, {user?.email || "User"}</p>
+					<button onClick={handleLogout}>Logout</button>
+				</div>
 			</header>
 
 			<div className="balance-section">

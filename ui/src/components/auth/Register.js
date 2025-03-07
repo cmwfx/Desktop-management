@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
 const Register = () => {
 	const [formData, setFormData] = useState({
@@ -10,8 +11,16 @@ const Register = () => {
 	});
 	const [error, setError] = useState("");
 	const navigate = useNavigate();
+	const { register, isAuthenticated, userRole } = useContext(AuthContext);
 
 	const { username, email, password, confirmPassword } = formData;
+
+	// Redirect if already authenticated
+	useEffect(() => {
+		if (isAuthenticated) {
+			navigate(userRole === "admin" ? "/admin" : "/user");
+		}
+	}, [isAuthenticated, userRole, navigate]);
 
 	const onChange = (e) => {
 		setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,18 +28,22 @@ const Register = () => {
 
 	const onSubmit = async (e) => {
 		e.preventDefault();
+		setError("");
 
 		if (password !== confirmPassword) {
 			setError("Passwords do not match");
 			return;
 		}
 
-		// This is a placeholder - we'll implement actual registration logic later
 		try {
-			// Simulate successful registration
+			// Use Firebase authentication to register
+			await register(email, password);
+
+			// Redirect to login page after successful registration
 			navigate("/login");
 		} catch (err) {
-			setError("Registration failed");
+			setError(err.message || "Registration failed");
+			console.error("Registration error:", err);
 		}
 	};
 
@@ -85,6 +98,12 @@ const Register = () => {
 			<p>
 				Already have an account? <Link to="/login">Login</Link>
 			</p>
+			<div className="register-help">
+				<p>
+					<strong>Hint:</strong> For admin access, use an email containing
+					"admin"
+				</p>
+			</div>
 		</div>
 	);
 };

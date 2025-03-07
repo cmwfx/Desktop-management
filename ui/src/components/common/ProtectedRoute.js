@@ -1,14 +1,18 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Navigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
 
 // This is a placeholder implementation - we'll connect it to your auth system later
 const ProtectedRoute = ({ children, role }) => {
-	// For now, we'll use localStorage to check if user is logged in
-	const isAuthenticated = localStorage.getItem("token");
-	const userRole = localStorage.getItem("userRole");
+	const { user, isAuthenticated, loading, userRole } = useContext(AuthContext);
 
+	// Show loading indicator while checking authentication
+	if (loading) {
+		return <div>Loading...</div>;
+	}
+
+	// Redirect to login if not authenticated
 	if (!isAuthenticated) {
-		// Redirect to login if not authenticated
 		return <Navigate to="/login" />;
 	}
 
@@ -17,6 +21,10 @@ const ProtectedRoute = ({ children, role }) => {
 		// Redirect to appropriate dashboard based on role
 		return <Navigate to={userRole === "admin" ? "/admin" : "/user"} />;
 	}
+
+	// For now, we'll allow access to any authenticated user
+	// In a real application, you would check user roles from your database
+	// or from custom claims in Firebase
 
 	return children;
 };
