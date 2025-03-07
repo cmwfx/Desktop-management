@@ -11,8 +11,6 @@ const Login = () => {
 	const navigate = useNavigate();
 	const { login, isAuthenticated, userRole } = useContext(AuthContext);
 
-	const { email, password } = formData;
-
 	// Redirect if already authenticated
 	useEffect(() => {
 		if (isAuthenticated) {
@@ -29,8 +27,8 @@ const Login = () => {
 		setError("");
 
 		try {
-			// Use Firebase authentication
-			await login(email, password);
+			// Use backend API for authentication
+			await login(formData);
 
 			// Redirection will happen in the useEffect hook
 		} catch (err) {
@@ -50,7 +48,7 @@ const Login = () => {
 					<input
 						type="email"
 						name="email"
-						value={email}
+						value={formData.email}
 						onChange={onChange}
 						required
 					/>
@@ -60,7 +58,7 @@ const Login = () => {
 					<input
 						type="password"
 						name="password"
-						value={password}
+						value={formData.password}
 						onChange={onChange}
 						required
 					/>

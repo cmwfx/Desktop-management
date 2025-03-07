@@ -1,11 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
-import {
-	createUserWithEmailAndPassword,
-	signInWithEmailAndPassword,
-	signOut,
-	onAuthStateChanged,
-} from "firebase/auth";
-import { auth } from "../firebase";
+import * as authService from "../services/auth";
 
 export const AuthContext = createContext();
 
@@ -15,59 +9,84 @@ export const AuthProvider = ({ children }) => {
 	const [loading, setLoading] = useState(true);
 	const [userRole, setUserRole] = useState(null);
 
-	// Helper function to determine if a user is an admin based on email
-	const checkIfAdmin = (email) => {
-		// For development, we'll consider emails containing 'admin' as admin users
-		return email && (email.includes("admin") || email.includes("Admin"));
-	};
-
 	useEffect(() => {
-		// Listen for auth state changes
-		const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-			if (currentUser) {
-				// User is signed in
-				setUser(currentUser);
-				setIsAuthenticated(true);
+		// Check if user is logged in
+		const token = localStorage.getItem("token");
 
-				// Set user role based on email
-				const role = checkIfAdmin(currentUser.email) ? "admin" : "user";
-				setUserRole(role);
-			} else {
-				// User is signed out
-				setUser(null);
-				setIsAuthenticated(false);
-				setUserRole(null);
-			}
+		if (token) {
+			// Fetch user data from backend
+			const fetchUser = async () => {
+				try {
+					const userData = await authService.getCurrentUser();
+					if (userData.success) {
+						setUser(userData.data);
+						setIsAuthenticated(true);
+						setUserRole(userData.data.role);
+					} else {
+						// Token is invalid
+						localStorage.removeItem("token");
+						setUser(null);
+						setIsAuthenticated(false);
+						setUserRole(null);
+					}
+				} catch (error) {
+					console.error("Error fetching user data:", error);
+					localStorage.removeItem("token");
+					setUser(null);
+					setIsAuthenticated(false);
+					setUserRole(null);
+				} finally {
+					setLoading(false);
+				}
+			};
+
+			fetchUser();
+		} else {
+			// No token found
+			setUser(null);
+			setIsAuthenticated(false);
+			setUserRole(null);
 			setLoading(false);
-		});
-
-		// Cleanup subscription on unmount
-		return () => unsubscribe();
+		}
 	}, []);
 
 	// Register a new user
-	const register = async (email, password) => {
+	const register = async (userData) => {
 		try {
-			const userCredential = await createUserWithEmailAndPassword(
-				auth,
-				email,
-				password
-			);
-			return userCredential.user;
+			const response = await authService.register(userData);
+
+			if (response.success) {
+				// Store token
+				localStorage.setItem("token", response.token);
+
+				// Set user data
+				setUser(response.user);
+				setIsAuthenticated(true);
+				setUserRole(response.user.role);
+
+				return response.user;
+			}
 		} catch (error) {
 			throw error;
 		}
 	};
 
 	// Login a user
-	const login = async (email, password) => {
+	const login = async (credentials) => {
 		try {
-			const userCredential = await signInWithEmailAndPassword(
-				auth,
-				email,
-				password
-			);
-			return userCredential.user;
+			const response = await authService.login(credentials);
+
+			if (response.success) {
+				// Store token
+				localStorage.setItem("token", response.token);
+
+				// Set user data
+				setUser(response.user);
+				setIsAuthenticated(true);
+				setUserRole(response.user.role);
+
+				return response.user;
+			}
 		} catch (error) {
 			throw error;
 		}
@@ -76,7 +95,13 @@ export const AuthProvider = ({ children }) => {
 	// Logout a user
 	const logout = async () => {
 		try {
-			await signOut(auth);
+			// Remove token
+			localStorage.removeItem("token");
+
+			// Clear user data
+			setUser(null);
+			setIsAuthenticated(false);
+			setUserRole(null);
 		} catch (error) {
 			throw error;
 		}

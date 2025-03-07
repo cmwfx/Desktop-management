@@ -13,8 +13,6 @@ const Register = () => {
 	const navigate = useNavigate();
 	const { register, isAuthenticated, userRole } = useContext(AuthContext);
 
-	const { username, email, password, confirmPassword } = formData;
-
 	// Redirect if already authenticated
 	useEffect(() => {
 		if (isAuthenticated) {
@@ -30,14 +28,20 @@ const Register = () => {
 		e.preventDefault();
 		setError("");
 
-		if (password !== confirmPassword) {
+		if (formData.password !== formData.confirmPassword) {
 			setError("Passwords do not match");
 			return;
 		}
 
 		try {
-			// Use Firebase authentication to register
-			await register(email, password);
+			// Use backend API for registration
+			const userData = {
+				username: formData.username,
+				email: formData.email,
+				password: formData.password,
+			};
+
+			await register(userData);
 
 			// Redirect to login page after successful registration
 			navigate("/login");
@@ -58,7 +62,7 @@ const Register = () => {
 					<input
 						type="text"
 						name="username"
-						value={username}
+						value={formData.username}
 						onChange={onChange}
 						required
 					/>
@@ -68,7 +72,7 @@ const Register = () => {
 					<input
 						type="email"
 						name="email"
-						value={email}
+						value={formData.email}
 						onChange={onChange}
 						required
 					/>
@@ -78,7 +82,7 @@ const Register = () => {
 					<input
 						type="password"
 						name="password"
-						value={password}
+						value={formData.password}
 						onChange={onChange}
 						required
 					/>
@@ -88,7 +92,7 @@ const Register = () => {
 					<input
 						type="password"
 						name="confirmPassword"
-						value={confirmPassword}
+						value={formData.confirmPassword}
 						onChange={onChange}
 						required
 					/>

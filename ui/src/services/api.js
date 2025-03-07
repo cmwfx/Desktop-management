@@ -11,6 +11,7 @@ const api = axios.create({
 // Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
 	(config) => {
+		// Get token from Firebase Auth
 		const token = localStorage.getItem("token");
 		if (token) {
 			config.headers.Authorization = `Bearer ${token}`;

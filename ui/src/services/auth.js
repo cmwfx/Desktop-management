@@ -6,7 +6,9 @@ export const register = async (userData) => {
 		const response = await api.post("/users/register", userData);
 		return response.data;
 	} catch (error) {
-		throw error.response.data;
+		throw (
+			error.response?.data || { success: false, message: "Registration failed" }
+		);
 	}
 };
 
@@ -16,7 +18,7 @@ export const login = async (credentials) => {
 		const response = await api.post("/users/login", credentials);
 		return response.data;
 	} catch (error) {
-		throw error.response.data;
+		throw error.response?.data || { success: false, message: "Login failed" };
 	}
 };
 
@@ -26,16 +28,38 @@ export const getCurrentUser = async () => {
 		const response = await api.get("/users/me");
 		return response.data;
 	} catch (error) {
-		throw error.response.data;
+		throw (
+			error.response?.data || {
+				success: false,
+				message: "Failed to get user data",
+			}
+		);
 	}
 };
 
-// Update user's balance
+// Update user's balance (admin only)
 export const updateBalance = async (userId, amount) => {
 	try {
 		const response = await api.put(`/users/${userId}/balance`, { amount });
 		return response.data;
 	} catch (error) {
-		throw error.response.data;
+		throw (
+			error.response?.data || {
+				success: false,
+				message: "Failed to update balance",
+			}
+		);
+	}
+};
+
+// Get all users (admin only)
+export const getAllUsers = async () => {
+	try {
+		const response = await api.get("/users");
+		return response.data;
+	} catch (error) {
+		throw (
+			error.response?.data || { success: false, message: "Failed to get users" }
+		);
 	}
 };
