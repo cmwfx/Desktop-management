@@ -1,9 +1,8 @@
 import axios from "axios";
-import { ADMIN_API_URL } from "../config";
 
 // Create an axios instance with default config
 const api = axios.create({
-	baseURL: ADMIN_API_URL + "/api",
+	baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
 	headers: {
 		"Content-Type": "application/json",
 	},
@@ -37,39 +36,5 @@ api.interceptors.response.use(
 		return Promise.reject(error);
 	}
 );
-
-// Helper function for password change
-export const changePassword = async (clientIP, username, newPassword) => {
-	try {
-		const response = await api.post("/change-password", {
-			clientIP,
-			username,
-			newPassword,
-		});
-		return response.data;
-	} catch (error) {
-		throw (
-			error.response?.data || {
-				success: false,
-				message: "Failed to change password",
-			}
-		);
-	}
-};
-
-// Helper function for locking PC
-export const lockPC = async (clientIP, username) => {
-	try {
-		const response = await api.post("/lock-pc", {
-			clientIP,
-			username,
-		});
-		return response.data;
-	} catch (error) {
-		throw (
-			error.response?.data || { success: false, message: "Failed to lock PC" }
-		);
-	}
-};
 
 export default api;

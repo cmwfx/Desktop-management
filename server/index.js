@@ -28,7 +28,6 @@ app.use("/api/users", require("./routes/users"));
 app.use("/api/computers", require("./routes/computers"));
 app.use("/api/sessions", require("./routes/sessions"));
 app.use("/api/transactions", require("./routes/transactions"));
-app.use("/api", require("./routes/meshcentral"));
 
 // Default route
 app.get("/", (req, res) => {
@@ -37,6 +36,6 @@ app.get("/", (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-	console.log(`Server running on port ${PORT} and listening on all interfaces`);
+app.listen(PORT, () => {
+	console.log(`Server running on port ${PORT}`);
 });

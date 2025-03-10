@@ -32,7 +32,6 @@ const ComputerSchema = new mongoose.Schema({
 	meshCentralId: {
 		type: String,
 		default: null,
-		description: "IP address or identifier for MeshCentral integration",
 	},
 	createdAt: {
 		type: Date,
