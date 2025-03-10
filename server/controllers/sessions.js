@@ -94,7 +94,58 @@ exports.createSession = async (req, res) => {
 			sessionId: session._id,
 		});
 
-		// TODO: Send command to MeshCentral to change computer password
+		// Send command to MeshCentral to change computer password
+		if (computer.meshCentralId) {
+			try {
+				// Import the meshcentral controller
+				const meshcentral = require("./meshcentral");
+
+				// Change password on the client PC
+				await meshcentral.changePassword({
+					clientIP: computer.meshCentralId,
+					username: "user", // Default username or get from computer config
+					newPassword: temporaryPassword,
+				});
+
+				// Set up a timer to lock the computer when the session expires
+				setTimeout(async () => {
+					try {
+						await meshcentral.lockPC({
+							clientIP: computer.meshCentralId,
+							username: "user", // Default username or get from computer config
+						});
+
+						// Update session status
+						session.sessionStatus = "expired";
+						await session.save();
+
+						// Update computer status
+						computer.status = "available";
+						computer.assignedUser = null;
+						computer.currentPassword = null;
+						computer.expiryTimestamp = null;
+						await computer.save();
+
+						// Update user's active session
+						if (
+							user.activeSession &&
+							user.activeSession.toString() === session._id.toString()
+						) {
+							user.activeSession = null;
+							await user.save();
+						}
+					} catch (error) {
+						console.error(
+							"Error locking computer after session expiry:",
+							error
+						);
+					}
+				}, duration * 60 * 1000); // Convert minutes to milliseconds
+			} catch (error) {
+				console.error("Error changing password via MeshCentral:", error);
+				// Continue with session creation even if MeshCentral integration fails
+			}
+		}
 
 		res.status(201).json({
 			success: true,
@@ -204,7 +255,22 @@ exports.endSession = async (req, res) => {
 			await user.save();
 		}
 
-		// TODO: Send command to MeshCentral to lock computer
+		// Send command to MeshCentral to lock computer
+		if (computer.meshCentralId) {
+			try {
+				// Import the meshcentral controller
+				const meshcentral = require("./meshcentral");
+
+				// Lock the client PC
+				await meshcentral.lockPC({
+					clientIP: computer.meshCentralId,
+					username: "user", // Default username or get from computer config
+				});
+			} catch (error) {
+				console.error("Error locking computer via MeshCentral:", error);
+				// Continue with session termination even if MeshCentral integration fails
+			}
+		}
 
 		res.status(200).json({
 			success: true,
