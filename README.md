@@ -9,6 +9,7 @@ A MERN stack application for managing computers in an internet cafe.
 - Session tracking
 - Transaction history
 - Balance management
+- Real-time computer monitoring via WebSockets
 
 ## Tech Stack
 
@@ -16,7 +17,27 @@ A MERN stack application for managing computers in an internet cafe.
 - Express: Backend API
 - React: Frontend UI
 - Node.js: Server
+- Socket.IO: Real-time communication
 - JWT: Authentication
+
+## System Architecture
+
+The system consists of three main components:
+
+1. **Web Application (MERN Stack)**:
+
+   - Frontend: React-based UI for users and admins
+   - Backend: Express/Node.js API with MongoDB database
+
+2. **Guest Agent**:
+
+   - Lightweight Node.js application that runs on each guest computer
+   - Connects to the central server via WebSockets
+   - Executes commands like changing passwords and locking computers
+
+3. **WebSocket Server**:
+   - Integrated into the Express backend
+   - Manages real-time communication between the web app and guest agents
 
 ## Development Setup
 
@@ -74,6 +95,15 @@ npm start
 ```
 
 3. Access the application at http://localhost:3000
+
+### Setting Up Guest Agents
+
+1. Copy the `guest-agent` directory to each guest computer
+
+2. On each guest computer:
+   - Install Node.js
+   - Run the `install.bat` script as administrator (Windows)
+   - Follow the prompts to configure the agent
 
 ## Deployment
 

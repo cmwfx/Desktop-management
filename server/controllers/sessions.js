@@ -3,10 +3,30 @@ const Computer = require("../models/Computer");
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
 const crypto = require("crypto");
+const axios = require("axios");
 
 // Helper function to generate a random password
 const generatePassword = () => {
 	return "temp-" + Math.floor(1000 + Math.random() * 9000);
+};
+
+// Helper function to send a command to a guest computer
+const sendCommandToComputer = async (computerNumber, command) => {
+	try {
+		// Use the internal API endpoint to send the command
+		const response = await axios.post(
+			"http://localhost:" + (process.env.PORT || 5000) + "/api/remote-command",
+			{
+				computerNumber,
+				command,
+			}
+		);
+
+		return response.data;
+	} catch (error) {
+		console.error("Error sending command to computer:", error);
+		throw new Error("Failed to send command to computer");
+	}
 };
 
 // @desc    Create new session (purchase time)
@@ -94,7 +114,51 @@ exports.createSession = async (req, res) => {
 			sessionId: session._id,
 		});
 
-		// TODO: Send command to MeshCentral to change computer password
+		// Send command to change password on the guest computer
+		try {
+			await sendCommandToComputer(computer.computerNumber, {
+				action: "changePassword",
+				newPassword: temporaryPassword,
+			});
+
+			console.log(
+				`Password change command sent to Computer #${computer.computerNumber}`
+			);
+		} catch (error) {
+			console.error("Failed to send password change command:", error);
+			// We don't want to fail the session creation if the command fails
+			// The admin can manually trigger the command later
+		}
+
+		// Schedule session expiry
+		setTimeout(async () => {
+			try {
+				// Check if the session is still active
+				const currentSession = await Session.findById(session._id);
+				if (currentSession && currentSession.sessionStatus === "active") {
+					// End the session
+					await exports.endSession(
+						{
+							params: { id: session._id },
+							// Create a system user for the request
+							user: { id: null, role: "system" },
+						},
+						{
+							status: (code) => ({
+								json: (data) => {
+									console.log(
+										`Session ${session._id} automatically ended with status code ${code}`
+									);
+									console.log(data);
+								},
+							}),
+						}
+					);
+				}
+			} catch (error) {
+				console.error("Error ending session automatically:", error);
+			}
+		}, duration * 60 * 1000); // Convert minutes to milliseconds
 
 		res.status(201).json({
 			success: true,
@@ -204,7 +268,17 @@ exports.endSession = async (req, res) => {
 			await user.save();
 		}
 
-		// TODO: Send command to MeshCentral to lock computer
+		// Send command to lock the computer
+		try {
+			await sendCommandToComputer(computer.computerNumber, {
+				action: "lockComputer",
+			});
+
+			console.log(`Lock command sent to Computer #${computer.computerNumber}`);
+		} catch (error) {
+			console.error("Failed to send lock command:", error);
+			// We don't want to fail the session termination if the command fails
+		}
 
 		res.status(200).json({
 			success: true,

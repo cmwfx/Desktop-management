@@ -5,6 +5,7 @@ import { getAllComputers } from "../../services/computers";
 import { getAllSessions, endSession } from "../../services/sessions";
 import { getAllUsers } from "../../services/auth";
 import { createDeposit } from "../../services/transactions";
+import ComputerMonitor from "./ComputerMonitor";
 
 const AdminDashboard = () => {
 	const [computers, setComputers] = useState([]);
@@ -12,6 +13,7 @@ const AdminDashboard = () => {
 	const [sessions, setSessions] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
+	const [activeTab, setActiveTab] = useState("overview"); // 'overview', 'computers', 'users', 'monitor'
 
 	const navigate = useNavigate();
 	const { logout, user } = useContext(AuthContext);
@@ -151,115 +153,214 @@ const AdminDashboard = () => {
 
 			{error && <div className="error-message">{error}</div>}
 
-			<div className="dashboard-stats">
-				<div className="stat-card">
-					<h3>Total Computers</h3>
-					<p>{computers.length}</p>
-				</div>
-				<div className="stat-card">
-					<h3>Computers In Use</h3>
-					<p>{computers.filter((comp) => comp.status === "in-use").length}</p>
-				</div>
-				<div className="stat-card">
-					<h3>Total Users</h3>
-					<p>{users.length}</p>
-				</div>
-				<div className="stat-card">
-					<h3>Active Sessions</h3>
-					<p>{activeSessions.length}</p>
-				</div>
+			<div className="dashboard-tabs">
+				<button
+					className={activeTab === "overview" ? "active" : ""}
+					onClick={() => setActiveTab("overview")}
+				>
+					Overview
+				</button>
+				<button
+					className={activeTab === "computers" ? "active" : ""}
+					onClick={() => setActiveTab("computers")}
+				>
+					Computers
+				</button>
+				<button
+					className={activeTab === "users" ? "active" : ""}
+					onClick={() => setActiveTab("users")}
+				>
+					Users
+				</button>
+				<button
+					className={activeTab === "monitor" ? "active" : ""}
+					onClick={() => setActiveTab("monitor")}
+				>
+					Computer Monitor
+				</button>
 			</div>
 
-			<div className="computers-section">
-				<h2>Computer Status</h2>
-				<table className="computers-table">
-					<thead>
-						<tr>
-							<th>Computer #</th>
-							<th>Status</th>
-							<th>User</th>
-							<th>Time Remaining</th>
-							<th>Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						{computers.map((computer) => {
-							// Find active session for this computer
-							const session = activeSessions.find(
-								(s) => s.computerId && s.computerId._id === computer._id
-							);
+			{activeTab === "overview" && (
+				<>
+					<div className="dashboard-stats">
+						<div className="stat-card">
+							<h3>Total Computers</h3>
+							<p>{computers.length}</p>
+						</div>
+						<div className="stat-card">
+							<h3>Computers In Use</h3>
+							<p>
+								{computers.filter((comp) => comp.status === "in-use").length}
+							</p>
+						</div>
+						<div className="stat-card">
+							<h3>Total Users</h3>
+							<p>{users.length}</p>
+						</div>
+						<div className="stat-card">
+							<h3>Active Sessions</h3>
+							<p>{activeSessions.length}</p>
+						</div>
+					</div>
 
-							// Calculate time remaining
-							const timeRemaining =
-								session && session.endTime
-									? Math.max(
-											0,
-											Math.floor(
-												(new Date(session.endTime) - new Date()) / 60000
-											)
-									  )
-									: 0;
+					<div className="computers-section">
+						<h2>Computer Status</h2>
+						<table className="computers-table">
+							<thead>
+								<tr>
+									<th>Computer #</th>
+									<th>Status</th>
+									<th>User</th>
+									<th>Time Remaining</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{computers.map((computer) => {
+									// Find active session for this computer
+									const session = activeSessions.find(
+										(s) => s.computerId && s.computerId._id === computer._id
+									);
 
-							// Find user for this computer
-							const computerUser =
-								session && session.userId
-									? users.find((u) => u._id === session.userId._id)
-									: null;
+									// Calculate time remaining
+									const timeRemaining =
+										session && session.endTime
+											? Math.max(
+													0,
+													Math.floor(
+														(new Date(session.endTime) - new Date()) / 60000
+													)
+											  )
+											: 0;
 
-							return (
-								<tr key={computer._id}>
-									<td>{computer.computerNumber}</td>
-									<td>{computer.status}</td>
-									<td>{computerUser ? computerUser.username : "N/A"}</td>
+									// Find user for this computer
+									const computerUser =
+										session && session.userId
+											? users.find((u) => u._id === session.userId._id)
+											: null;
+
+									return (
+										<tr key={computer._id}>
+											<td>{computer.computerNumber}</td>
+											<td>{computer.status}</td>
+											<td>{computerUser ? computerUser.username : "N/A"}</td>
+											<td>
+												{computer.status === "in-use"
+													? `${timeRemaining} min`
+													: "N/A"}
+											</td>
+											<td>
+												{computer.status === "in-use" && session && (
+													<button onClick={() => handleEndSession(session._id)}>
+														Force End Session
+													</button>
+												)}
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					</div>
+				</>
+			)}
+
+			{activeTab === "computers" && (
+				<div className="computers-section">
+					<h2>Computer Management</h2>
+					<table className="computers-table">
+						<thead>
+							<tr>
+								<th>Computer #</th>
+								<th>Status</th>
+								<th>User</th>
+								<th>Time Remaining</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							{computers.map((computer) => {
+								// Find active session for this computer
+								const session = activeSessions.find(
+									(s) => s.computerId && s.computerId._id === computer._id
+								);
+
+								// Calculate time remaining
+								const timeRemaining =
+									session && session.endTime
+										? Math.max(
+												0,
+												Math.floor(
+													(new Date(session.endTime) - new Date()) / 60000
+												)
+										  )
+										: 0;
+
+								// Find user for this computer
+								const computerUser =
+									session && session.userId
+										? users.find((u) => u._id === session.userId._id)
+										: null;
+
+								return (
+									<tr key={computer._id}>
+										<td>{computer.computerNumber}</td>
+										<td>{computer.status}</td>
+										<td>{computerUser ? computerUser.username : "N/A"}</td>
+										<td>
+											{computer.status === "in-use"
+												? `${timeRemaining} min`
+												: "N/A"}
+										</td>
+										<td>
+											{computer.status === "in-use" && session && (
+												<button onClick={() => handleEndSession(session._id)}>
+													Force End Session
+												</button>
+											)}
+										</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				</div>
+			)}
+
+			{activeTab === "users" && (
+				<div className="users-section">
+					<h2>User Management</h2>
+					<table className="users-table">
+						<thead>
+							<tr>
+								<th>Username</th>
+								<th>Email</th>
+								<th>Balance</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							{users.map((user) => (
+								<tr key={user._id}>
+									<td>{user.username}</td>
+									<td>{user.email}</td>
+									<td>${user.balance}</td>
 									<td>
-										{computer.status === "in-use"
-											? `${timeRemaining} min`
-											: "N/A"}
-									</td>
-									<td>
-										{computer.status === "in-use" && session && (
-											<button onClick={() => handleEndSession(session._id)}>
-												Force End Session
-											</button>
-										)}
+										<button onClick={() => handleAddBalance(user._id, 10)}>
+											Add $10
+										</button>
+										<button onClick={() => handleAddBalance(user._id, 20)}>
+											Add $20
+										</button>
 									</td>
 								</tr>
-							);
-						})}
-					</tbody>
-				</table>
-			</div>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
 
-			<div className="users-section">
-				<h2>User Management</h2>
-				<table className="users-table">
-					<thead>
-						<tr>
-							<th>Username</th>
-							<th>Email</th>
-							<th>Balance</th>
-							<th>Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						{users.map((user) => (
-							<tr key={user._id}>
-								<td>{user.username}</td>
-								<td>{user.email}</td>
-								<td>${user.balance}</td>
-								<td>
-									<button onClick={() => handleAddBalance(user._id, 10)}>
-										Add $10
-									</button>
-									<button onClick={() => handleAddBalance(user._id, 20)}>
-										Add $20
-									</button>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			</div>
+			{activeTab === "monitor" && <ComputerMonitor />}
 		</div>
 	);
 };

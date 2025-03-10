@@ -1,0 +1,5 @@
+{
+	"serverUrl": "https://your-heroku-app.herokuapp.com",
+	"guestId": "guest-1001",
+	"computerNumber": 1
+}
